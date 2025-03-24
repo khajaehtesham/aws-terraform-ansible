@@ -75,10 +75,17 @@ resource "aws_instance" "web" {
     aws_security_group.dynamicsg
   ]
 
-  tags = {
-    Name        = "Jenkins"
-    Envrionment = "TST"
-    Application = "SAP"
+  
+provisioner "file" {
+    source      = "scripts/ansible-setup.sh" # Path to your shell script
+    destination = "/tmp/script.sh"
+
+    connection {
+      type        = "ssh"
+      user        = "ubuntu" # or ec2-user, depending on your AMI
+      private_key = tls_private_key.rsa.private_key_pem
+      host        = self.public_ip
+    }
   }
 
   provisioner "remote-exec" {
@@ -94,18 +101,12 @@ resource "aws_instance" "web" {
       host        = self.public_ip
     }
   }
-
-  provisioner "file" {
-    source      = "scripts/ansible-setup.sh" # Path to your shell script
-    destination = "/tmp/script.sh"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu" # or ec2-user, depending on your AMI
-      private_key = tls_private_key.rsa.private_key_pem
-      host        = self.public_ip
-    }
+tags = {
+    Name        = "Jenkins"
+    Envrionment = "TST"
+    Application = "SAP"
   }
+  
 }
 
 resource "aws_key_pair" "tf-key-pair" {
