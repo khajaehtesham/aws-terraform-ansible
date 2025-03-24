@@ -1,0 +1,39 @@
+-
+  name: Playbook to setup apache Server
+
+  hosts: vm
+  become: True
+  tasks:
+    - name: Install Apache package
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+       
+    - name: Modifying the contents of index.html page
+      copy:
+        dest: "/var/www/html/index.html"
+        content: "<h1>This is a Webpage created using Jenkins and Ansible</h1>"
+
+    - name: Allow all access to tcp port 80
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Start the Apache service
+      systemd:
+        name: apache2
+        state: restarted
+        enabled: true
+    
+    - name: Get the URL to access Webpage 
+      command: echo "http://{{ inventory_hostname }}"
+      register: url
+    
+    - name: print url
+      debug:
+        msg: "Webpage URL : {{ url.stdout }}"
+      
+        
+    

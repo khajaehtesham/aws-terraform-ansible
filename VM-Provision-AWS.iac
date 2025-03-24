@@ -1,0 +1,96 @@
+import groovy.json.*
+
+// SCRIPTED PIPELINE
+node ("$ENV") {
+
+   //  deleteDir ()
+     def mainDir = "cloud"
+     def statefile= "terraform.tfstate"
+  //   cleanWs ()
+    def ENVNAME;
+    //if (ENVNAME != "PR" && ENVNAME != "DR" && ENVNAME != "STG") {
+    //    ENVNAME = 'UAT'
+    // } else if ( ENVNAME == "DR" && ENVNAME == "STG") {
+    //   ENVNAME = "$ENVNAME"
+   // } else {
+    //    ENVNAME = "PR"
+   // }
+
+   
+       stage ('Fetch GIT code'){
+       dir('cloud') {
+         git 'https://github.com/ehteshamkhaja/ec2-terraform-ansible.git'
+       }// dir
+   }// stage 
+    
+     stage("Terraform Initialization and Plan"){
+        
+        try {
+        withAWS(credentials: 'AWS-Credentials') {    
+         sh """
+            cd ./cloud/ec2-infra-aws
+            echo 'Running Terraform init'
+             terraform init
+             echo 'Next, Terraform Plan would be executed' 
+             
+             set +x && terraform plan 
+        """
+       
+         input message: 'Are you sure you want to apply these changes?', ok: 'Yes'
+         
+         sh 'echo "Terraform plan is reviewed and approved now !!!"' 
+         }
+        } 
+        catch (exc) {
+            print "Terraform init/plan failed"
+            error('Aborting the pipeline' + exc)
+        } //catch
+         
+    } //stage
+
+    stage("Terraform $action"){
+     
+       try {
+        withAWS(credentials: 'AWS-Credentials') {
+        sh """
+        cd ./cloud/ec2-infra-aws
+        set +x && terraform $action $Approval 
+           
+        """
+       }
+    }
+        catch (exc) {
+            print "Terraform apply failed"
+            error('Aborting the pipeline' + exc)
+        }//catch 
+    
+     }//stage
+    
+    
+  if (action == 'apply' ){
+    stage("Pause for 2 minutes for server to be ready"){
+        
+            sh 'sleep 120'
+        
+    }
+  
+   stage("Executing ansible playbook to install Apache Server"){
+        try{
+            
+            ansiblePlaybook disableHostKeyChecking: false, installation: 'ansible', inventory: 'cloud/playbooks/inventory.ini', playbook: 'cloud/playbooks/apache.yaml', vaultTmpPath: '' 
+           
+        }
+         catch (exc) {
+            print "Ansible playbook execution failed"
+            error('Aborting the pipeline' + exc)
+                    }//catch 
+     }
+  
+ 
+   } 
+
+    
+}//node
+
+
+
