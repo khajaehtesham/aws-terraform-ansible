@@ -22,4 +22,4 @@ Select the option as 'Username and Password' and provide username as email id an
 
 Use Project as "Pipeline" and provide the VM-Provision-AWS.iac , provide the below parameters to the pipeline
 
-ENV-master, branch-master,Approval -> --auto-approve, action -> apply,destroy, GITURL --> https://github.com/ehteshamkhaja/ec2-terraform-ansible.git
+ENV-master, branch-master,Approval -> --auto-approve, action -> apply,destroy, GITURL --> (https://github.com/khajaehtesham/aws-terraform-ansible.git)
